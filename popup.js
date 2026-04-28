@@ -106,7 +106,7 @@ async function refreshSessionStatus() {
   if (response.result.loggedIn) {
     setStatus(elements.sessionStatus, 'status-success', `已检测到登录 Cookie（${response.result.cookieCount}）`);
   } else {
-    setStatus(elements.sessionStatus, 'status-error', '未检测到 DevOps 登录态，请先在浏览器中登录 devops.cwoa.net');
+    setStatus(elements.sessionStatus, 'status-error', '未检测到 DevOps 登录态，请先在浏览器中登录 cwoa 账号并访问 devops.cwoa.net');
   }
 }
 

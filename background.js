@@ -26,7 +26,7 @@ async function getSettings() {
 }
 
 async function getSessionStatus() {
-  const cookies = await chrome.cookies.getAll({ domain: 'devops.cwoa.net' });
+  const cookies = await chrome.cookies.getAll({ url: 'https://devops.cwoa.net/' });
   const names = new Set(cookies.map((cookie) => cookie.name));
   return {
     loggedIn: names.has('access_token') || names.has('bk_token') || names.has('twbk_token'),
