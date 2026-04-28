@@ -24,7 +24,7 @@ DevOps 工时填报浏览器插件，支持 Chrome 与 Edge。
 ## 本地验证
 
 ```bash
-cd /home/runner/work/cw-devops-worktime/cw-devops-worktime
+cd <仓库目录>
 npm test
 ```
 
@@ -33,7 +33,7 @@ npm test
 1. 打开 Chrome 或 Edge 的扩展管理页。
 2. 开启“开发者模式”。
 3. 选择“加载已解压的扩展程序”。
-4. 选择仓库目录 `/home/runner/work/cw-devops-worktime/cw-devops-worktime`。
+4. 选择当前仓库目录。
 5. 在浏览器中先登录 `https://devops.cwoa.net`，再打开插件。
 
 ## 使用方式
