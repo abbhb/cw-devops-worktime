@@ -2,15 +2,13 @@
   "manifest_version": 3,
   "name": "CW DevOps 工时填报",
   "description": "按日期范围读取本地 Markdown 日报并批量填报 DevOps 工时，支持 Chrome 与 Edge。",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "permissions": [
     "storage",
     "cookies"
   ],
   "host_permissions": [
-    "https://devops.cwoa.net/*",
-    "https://*.cwoa.net/*",
-    "https://cwoa.net/*"
+    "https://devops.cwoa.net/*"
   ],
   "background": {
     "service_worker": "background.js",
