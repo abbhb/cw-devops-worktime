@@ -41,7 +41,7 @@ npm test
 2. 开启“开发者模式”。
 3. 选择“加载已解压的扩展程序”。
 4. 选择当前仓库目录。
-5. 在浏览器中先登录 `https://devops.cwoa.net`，再打开插件。
+5. 在浏览器中先登录 `https://devops.cwoa.net`（登录态 Cookie 可能位于 `devops.cwoa.net` 或 `.cwoa.net`），再打开插件。
 
 ## 使用方式
 
@@ -54,6 +54,6 @@ npm test
 
 ## 注意事项
 
-- 插件依赖浏览器中已有的 `devops.cwoa.net` 登录 Cookie。
+- 插件依赖浏览器中已有的 CW 登录 Cookie，Cookie 域名可能为 `devops.cwoa.net` 或 `.cwoa.net`。
 - 日报文件内容按 Markdown 原文提交，不做渲染转换。
 - 默认 `productId`、`productLineId` 等参数已按题目示例预填，可在配置页修改。

@@ -1,6 +1,6 @@
 {
   "name": "cw-devops-worktime",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "devops工时填报浏览器插件",
   "private": true,
   "scripts": {
