@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CW DevOps 工时填报</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="popup-body">
+    <main class="container">
+      <header class="header">
+        <div>
+          <h1>CW DevOps 工时填报</h1>
+          <p class="subtle">Chrome / Edge 批量读取 Markdown 日报并填报工时</p>
+        </div>
+        <button id="openOptionsButton" class="ghost-button" type="button">全局配置</button>
+      </header>
+
+      <div class="status-row">
+        <span id="sessionStatus" class="status-pill status-pending">检查登录状态中...</span>
+        <span id="historyCount" class="subtle"></span>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-button active" data-tab="reporting" type="button">工时填报</button>
+        <button class="tab-button" data-tab="history" type="button">操作记录</button>
+      </div>
+
+      <section id="reportingTab" class="tab-panel active">
+        <section class="panel">
+          <label for="keywordInput">工作项关键词</label>
+          <div class="inline-row">
+            <input id="keywordInput" type="text" placeholder="输入关键字后搜索工作项" />
+            <button id="searchButton" type="button">搜索</button>
+          </div>
+          <p id="searchHint" class="subtle">根据关键词调接口获取候选工作项。</p>
+          <div id="workItemList" class="list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="grid-row two-columns">
+            <div>
+              <label for="startDateInput">开始日期</label>
+              <input id="startDateInput" type="date" />
+            </div>
+            <div>
+              <label for="endDateInput">结束日期</label>
+              <input id="endDateInput" type="date" />
+            </div>
+          </div>
+
+          <label for="folderInput">选择日报文件夹</label>
+          <input id="folderInput" type="file" webkitdirectory directory multiple />
+          <p class="subtle">文件名需为 2026-01-01.md 或 2026-01-01，内容按 Markdown 纯文本提交。</p>
+
+          <div class="inline-row actions-row">
+            <button id="previewButton" type="button">生成预览</button>
+            <button id="submitButton" type="button" class="primary-button" disabled>开始填报</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div id="previewSummary" class="summary-grid"></div>
+          <div id="calendarContainer" class="calendar-container empty-state">请选择日期范围并导入文件夹后生成预览。</div>
+          <div id="contentPreviewList" class="content-preview-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="inline-row between">
+            <h2>最近一次执行结果</h2>
+            <button id="exportLatestFailuresButton" type="button" disabled>导出失败 Excel</button>
+          </div>
+          <div id="latestResult" class="empty-state">暂无执行结果。</div>
+        </section>
+      </section>
+
+      <section id="historyTab" class="tab-panel">
+        <section class="panel">
+          <div class="inline-row between">
+            <h2>持久化操作记录</h2>
+            <button id="refreshHistoryButton" type="button">刷新</button>
+          </div>
+          <div id="historyList" class="history-list empty-state">暂无历史记录。</div>
+        </section>
+      </section>
+    </main>
+
+    <template id="workItemTemplate">
+      <label class="list-item work-item">
+        <input type="radio" name="workItem" />
+        <div>
+          <div class="item-title"></div>
+          <div class="subtle item-meta"></div>
+        </div>
+      </label>
+    </template>
+
+    <template id="historyTemplate">
+      <article class="history-card">
+        <div class="inline-row between wrap">
+          <div>
+            <h3 class="history-title"></h3>
+            <p class="subtle history-meta"></p>
+          </div>
+          <button type="button" class="small-button export-history-button">导出失败 Excel</button>
+        </div>
+        <div class="history-summary"></div>
+        <details>
+          <summary>查看明细</summary>
+          <div class="history-details"></div>
+        </details>
+      </article>
+    </template>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

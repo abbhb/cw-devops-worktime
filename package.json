@@ -1,0 +1,17 @@
+{
+  "name": "cw-devops-worktime",
+  "version": "1.0.0",
+  "description": "devops工时填报浏览器插件",
+  "private": true,
+  "scripts": {
+    "test": "node --check background.js && node --check popup.js && node --check options.js && node --check utils.js && node -e \"JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')); console.log('manifest ok')\""
+  },
+  "keywords": [
+    "chrome-extension",
+    "edge-extension",
+    "devops",
+    "worktime"
+  ],
+  "author": "",
+  "license": "ISC"
+}
