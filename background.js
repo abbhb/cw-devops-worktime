@@ -143,7 +143,7 @@ function buildSubmitPayload(workItem, entry, settings) {
     productId: settings.productId,
     customerId: settings.customerId,
     productLineId: settings.productLineId,
-    projectId: workItem.projectId,
+    projectId: resolveSubmitProjectId(workItem),
     issueId: workItem.issueId,
     issueType: settings.issueType || mapIssueType(workItem.typeClassify),
     estimateManHour: 0,
@@ -153,6 +153,22 @@ function buildSubmitPayload(workItem, entry, settings) {
     status: settings.status || 'PENDING',
     tenantId: settings.tenantId
   };
+}
+
+function resolveSubmitProjectId(workItem) {
+  const candidates = [
+    workItem?.ppmProjectId,
+    workItem?.PpmProjectID,
+    workItem?.projectGuid,
+    workItem?.projectUUID,
+    workItem?.projectUuid,
+    workItem?.projectId
+  ];
+  return candidates.find(isGuid) ?? '';
+}
+
+function isGuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value ?? '').trim());
 }
 
 function mapIssueType(typeClassify) {
