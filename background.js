@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, STORAGE_KEYS, normalizeSettings } from './utils.js';
+import { DEFAULT_SETTINGS, STORAGE_KEYS, normalizeSettings, truncateJobContent } from './utils.js';
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   handleMessage(message)
@@ -134,7 +134,7 @@ async function submitBatch(payload) {
 
 function buildSubmitPayload(workItem, entry, settings) {
   return {
-    jobContent: entry.content,
+    jobContent: truncateJobContent(entry.content),
     manHour: Number(settings.manHour),
     jobDate: entry.date,
     firstHourTypeId: Number(settings.firstHourTypeId),

@@ -1,5 +1,6 @@
 import {
   DEFAULT_SETTINGS,
+  MAX_JOB_CONTENT_LENGTH,
   STORAGE_KEYS,
   buildCalendarSections,
   downloadWorkbook,
@@ -9,7 +10,8 @@ import {
   isMarkdownFile,
   normalizeSettings,
   resolveReportDate,
-  summarizePreview
+  summarizePreview,
+  truncateJobContent
 } from './utils.js';
 
 const state = {
@@ -108,7 +110,7 @@ async function refreshSessionStatus() {
   if (response.result.loggedIn) {
     setStatus(elements.sessionStatus, 'status-success', `已检测到登录 Cookie（${response.result.cookieCount}）`);
   } else {
-    setStatus(elements.sessionStatus, 'status-error', '未检测到 DevOps 登录态，请先在浏览器中登录 cwoa 账号并访问 devops.cwoa.net');
+    setStatus(elements.sessionStatus, 'status-error', '未检测到可用的 DevOps 登录 Cookie，请先在浏览器中登录 cwoa，并打开一次 https://devops.cwoa.net/。');
   }
 }
 
@@ -266,16 +268,21 @@ async function buildPreparedEntries(files) {
       continue;
     }
 
+    const truncatedContent = truncateJobContent(content);
+    if (truncatedContent !== content) {
+      warnings.push(`日报内容超过 ${MAX_JOB_CONTENT_LENGTH} 字，已自动截断：${file.name}`);
+    }
+
     const entry = {
       date,
       fileName: file.name,
-      content
+      content: truncatedContent
     };
     preparedEntries.push(entry);
     entriesByDate[date] = {
       status: 'present',
       fileName: file.name,
-      content
+      content: truncatedContent
     };
   }
 

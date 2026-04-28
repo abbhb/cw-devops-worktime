@@ -22,6 +22,8 @@ export const DEFAULT_SETTINGS = {
   historyLimit: 50
 };
 
+export const MAX_JOB_CONTENT_LENGTH = 200;
+
 const WEEK_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
 export function normalizeSettings(settings = {}) {
@@ -95,6 +97,10 @@ export function resolveReportDate(fileDate, strategy = DEFAULT_SETTINGS.reportDa
 
 export function isMarkdownFile(fileName) {
   return /(?:\.md|\.markdown)$/i.test(fileName) || /^\d{4}-\d{2}-\d{2}$/.test(fileName.split('/').pop() ?? '');
+}
+
+export function truncateJobContent(content = '') {
+  return Array.from(String(content ?? '')).slice(0, MAX_JOB_CONTENT_LENGTH).join('');
 }
 
 export function buildCalendarSections(startDate, endDate, entriesByDate = {}) {
