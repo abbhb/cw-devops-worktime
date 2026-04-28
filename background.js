@@ -1,5 +1,7 @@
 import { DEFAULT_SETTINGS, STORAGE_KEYS, normalizeSettings, truncateJobContent } from './utils.js';
 
+const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   handleMessage(message)
     .then((result) => sendResponse({ ok: true, result }))
@@ -143,7 +145,7 @@ function buildSubmitPayload(workItem, entry, settings) {
     productId: settings.productId,
     customerId: settings.customerId,
     productLineId: settings.productLineId,
-    projectId: workItem.projectId,
+    projectId: resolveSubmitProjectId(workItem),
     issueId: workItem.issueId,
     issueType: settings.issueType || mapIssueType(workItem.typeClassify),
     estimateManHour: 0,
@@ -153,6 +155,26 @@ function buildSubmitPayload(workItem, entry, settings) {
     status: settings.status || 'PENDING',
     tenantId: settings.tenantId
   };
+}
+
+function resolveSubmitProjectId(workItem) {
+  const candidates = [
+    workItem?.ppmProjectId,
+    workItem?.PpmProjectID,
+    workItem?.projectGuid,
+    workItem?.projectUUID,
+    workItem?.projectUuid,
+    workItem?.projectId
+  ];
+  const projectId = candidates.find(isGuid) ?? '';
+  if (!projectId && workItem?.projectId) {
+    console.warn('Skip non-GUID ERP projectId in submit payload:', workItem.projectId);
+  }
+  return projectId;
+}
+
+function isGuid(value) {
+  return GUID_PATTERN.test(String(value ?? '').trim());
 }
 
 function mapIssueType(typeClassify) {
