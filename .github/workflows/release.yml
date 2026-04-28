@@ -1,0 +1,88 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - VERSION
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(tr -d '[:space:]' < VERSION)"
+          if [[ -z "${version}" ]]; then
+            echo "::error::VERSION 文件不能为空。"
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "tag=v${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Validate version consistency
+        run: npm run check:version
+
+      - name: Run existing tests
+        run: npm test
+
+      - name: Build release archive
+        run: |
+          mkdir -p dist
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+
+          version = Path("VERSION").read_text(encoding="utf-8").strip()
+          output = Path("dist") / f"cw-devops-worktime-v{version}.zip"
+          files = [
+              "manifest.json",
+              "background.js",
+              "popup.js",
+              "popup.html",
+              "options.html",
+              "options.js",
+              "styles.css",
+              "utils.js",
+          ]
+
+          with ZipFile(output, "w", ZIP_DEFLATED) as archive:
+              for file_name in files:
+                  archive.write(file_name)
+
+          print(f"built {output}")
+          PY
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          asset="dist/cw-devops-worktime-v${RELEASE_VERSION}.zip"
+          notes="Automated release for version ${RELEASE_VERSION}."
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" "${asset}" --clobber
+            gh release edit "${RELEASE_TAG}" --title "${RELEASE_TAG}" --notes "${notes}"
+          else
+            gh release create "${RELEASE_TAG}" "${asset}" --title "${RELEASE_TAG}" --notes "${notes}"
+          fi

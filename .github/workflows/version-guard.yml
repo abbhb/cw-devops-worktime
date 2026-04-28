@@ -1,0 +1,76 @@
+name: Version Guard
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  version-guard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate version consistency
+        run: npm run check:version
+
+      - name: Run existing tests
+        run: npm test
+
+      - name: Ensure VERSION is updated with repository changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Skip diff-based VERSION enforcement for manual runs."
+            exit 0
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch --no-tags origin "${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+            diff_range="origin/${{ github.base_ref }}...HEAD"
+          else
+            diff_range="${{ github.event.before }}...${{ github.sha }}"
+          fi
+
+          mapfile -t changed_files < <(git diff --name-only "${diff_range}")
+
+          if [[ "${#changed_files[@]}" -eq 0 ]]; then
+            echo "No changed files detected."
+            exit 0
+          fi
+
+          echo "Changed files:"
+          printf ' - %s\n' "${changed_files[@]}"
+
+          version_changed=false
+          non_version_changed=false
+
+          for file in "${changed_files[@]}"; do
+            if [[ "${file}" == "VERSION" ]]; then
+              version_changed=true
+              continue
+            fi
+
+            if [[ -n "${file}" ]]; then
+              non_version_changed=true
+            fi
+          done
+
+          if [[ "${non_version_changed}" == "true" && "${version_changed}" != "true" ]]; then
+            echo "::error::检测到仓库内容变更，但没有同步更新 VERSION。"
+            exit 1
+          fi
