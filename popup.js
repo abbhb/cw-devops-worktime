@@ -3,10 +3,12 @@ import {
   STORAGE_KEYS,
   buildCalendarSections,
   downloadWorkbook,
+  enumerateDates,
   formatDateTime,
   getFileDate,
   isMarkdownFile,
   normalizeSettings,
+  resolveReportDate,
   summarizePreview
 } from './utils.js';
 
@@ -228,11 +230,13 @@ async function buildPreparedEntries(files) {
       return;
     }
 
-    const dateKey = getFileDate(file.name);
-    if (!dateKey) {
+    const fileDate = getFileDate(file.name);
+    if (!fileDate) {
       warnings.push(`已忽略文件名不符合 YYYY-MM-DD 的文件：${file.name}`);
       return;
     }
+
+    const dateKey = resolveReportDate(fileDate, state.settings.reportDateStrategy);
 
     if (!expectedDates.has(dateKey)) {
       return;
@@ -595,16 +599,9 @@ function validateRange() {
 }
 
 function getRangeDates() {
-  const dates = [];
   const startDate = elements.startDateInput.value;
   const endDate = elements.endDateInput.value;
-  const cursor = new Date(`${startDate}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
-  while (cursor <= end) {
-    dates.push(cursor.toISOString().slice(0, 10));
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return dates;
+  return enumerateDates(startDate, endDate);
 }
 
 async function saveDraft() {

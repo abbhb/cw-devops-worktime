@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS = {
   reviewer: '',
   firstReviewer: '',
   manHour: 8,
+  reportDateStrategy: 'same-day',
   firstHourTypeId: 2,
   secondHourTypeId: 5,
   stepId: 96,
@@ -28,6 +29,7 @@ export function normalizeSettings(settings = {}) {
     ...DEFAULT_SETTINGS,
     ...settings,
     manHour: Number(settings.manHour ?? DEFAULT_SETTINGS.manHour),
+    reportDateStrategy: normalizeReportDateStrategy(settings.reportDateStrategy),
     firstHourTypeId: Number(settings.firstHourTypeId ?? DEFAULT_SETTINGS.firstHourTypeId),
     secondHourTypeId: Number(settings.secondHourTypeId ?? DEFAULT_SETTINGS.secondHourTypeId),
     stepId: Number(settings.stepId ?? DEFAULT_SETTINGS.stepId),
@@ -36,11 +38,16 @@ export function normalizeSettings(settings = {}) {
 }
 
 export function formatDate(date) {
-  return date.toISOString().slice(0, 10);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0')
+  ].join('-');
 }
 
 export function parseDate(dateString) {
-  return new Date(`${dateString}T00:00:00`);
+  const [year, month, day] = String(dateString).split('-').map(Number);
+  return new Date(year, month - 1, day);
 }
 
 export function enumerateDates(startDate, endDate) {
@@ -48,8 +55,8 @@ export function enumerateDates(startDate, endDate) {
   if (!startDate || !endDate || startDate > endDate) {
     return dates;
   }
-  const cursor = new Date(`${startDate}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
+  const cursor = parseDate(startDate);
+  const end = parseDate(endDate);
   while (cursor <= end) {
     dates.push(formatDate(cursor));
     cursor.setDate(cursor.getDate() + 1);
@@ -66,6 +73,24 @@ export function getFileDate(fileName) {
   const normalized = fileName.split('/').pop() ?? '';
   const stem = normalized.replace(/\.[^.]+$/, '');
   return /^\d{4}-\d{2}-\d{2}$/.test(stem) ? stem : '';
+}
+
+export function normalizeReportDateStrategy(strategy) {
+  return strategy === 'previous-day' ? 'previous-day' : DEFAULT_SETTINGS.reportDateStrategy;
+}
+
+export function resolveReportDate(fileDate, strategy = DEFAULT_SETTINGS.reportDateStrategy) {
+  const normalizedStrategy = normalizeReportDateStrategy(strategy);
+  if (!fileDate) {
+    return '';
+  }
+  if (normalizedStrategy === 'same-day') {
+    return fileDate;
+  }
+
+  const date = parseDate(fileDate);
+  date.setDate(date.getDate() - 1);
+  return formatDate(date);
 }
 
 export function isMarkdownFile(fileName) {
