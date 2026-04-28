@@ -25,8 +25,15 @@ DevOps 工时填报浏览器插件，支持 Chrome 与 Edge。
 
 ```bash
 cd <仓库目录>
+npm run check:version
 npm test
 ```
+
+## 版本与发布
+
+- 仓库根目录 `VERSION` 是发布版本源，`package.json` 与 `manifest.json` 中的版本号必须与它保持一致。
+- 当 `main` 分支上的提交更新 `VERSION` 后，GitHub Actions 会自动执行版本校验、运行 `npm test`、打包扩展并按 `v<版本号>` 创建 / 更新 GitHub Release。
+- Pull Request 会校验：只要仓库内容发生变更，就必须同步更新 `VERSION`，避免漏发版本。
 
 ## 安装方式
 
