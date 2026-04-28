@@ -2,7 +2,8 @@
   "manifest_version": 3,
   "name": "CW DevOps 工时填报",
   "description": "按日期范围读取本地 Markdown 日报并批量填报 DevOps 工时，支持 Chrome 与 Edge。",
-  "version": "1.0.3",
+  "version": "1.0.4",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA60SdxqmnUmUEW9cInvcKEynVF9PbxtVkx1eSeTrSc+K/09dnG0tDTyS/KqB2Wty/lNxtHVSZIBZ7VVD5MwG2ncqYanPjuaCTKzQfRsrfozrZlm80EUa9thi8mWaJRXqoJtpVklH3SupZ3CoMHG2fp9HXRKQvkq2Y1TZshtu7jwS3s2FZdLMDplWm9/5l/rHnkrsfkAIOFBxARaW3sYUt0x7AldSK8w2DYdUYFveooELR8k8NK3QiMqsySw4dmox2m2Bxi3+e8w/jtZVWF51bVlBmvY4lg6O/FlHLWxMv4Df6HKLfCciOnxI3Rr+UNb3Q5RiZEJdbsuosBD9hDr1qVwIDAQAB",
   "permissions": [
     "storage",
     "cookies"
