@@ -450,6 +450,10 @@ pre {
 }
 
 @media (max-width: 760px) {
+  :root {
+    --popup-content-scale: 0.98;
+  }
+
   .popup-body {
     width: 720px;
   }
