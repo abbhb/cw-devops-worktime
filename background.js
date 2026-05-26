@@ -43,11 +43,17 @@ async function searchWorkItems(keyword) {
   }
   const normalizedKeyword = keyword.trim();
   const settings = await getSettings();
-  const [taskRecords, demandRecords] = await Promise.all([
+  const results = await Promise.allSettled([
     searchTaskWorkItems(settings, normalizedKeyword),
     searchDemandWorkItems(settings, normalizedKeyword)
   ]);
-  return dedupeWorkItems([...taskRecords, ...demandRecords]);
+  const fulfilled = results
+    .filter((result) => result.status === 'fulfilled')
+    .flatMap((result) => result.value);
+  if (fulfilled.length || results.some((result) => result.status === 'fulfilled')) {
+    return dedupeWorkItems(fulfilled);
+  }
+  throw results[0].reason;
 }
 
 async function searchTaskWorkItems(settings, keyword) {
