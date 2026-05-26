@@ -1,6 +1,7 @@
 import { DEFAULT_SETTINGS, STORAGE_KEYS, normalizeSettings, truncateJobContent } from './utils.js';
 
 const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const DEMAND_PROJECT_KEY = 'aiops';
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   handleMessage(message)
@@ -40,17 +41,109 @@ async function searchWorkItems(keyword) {
   if (!keyword?.trim()) {
     throw new Error('请输入工作项关键词');
   }
+  const normalizedKeyword = keyword.trim();
   const settings = await getSettings();
+  const [taskRecords, demandRecords] = await Promise.all([
+    searchTaskWorkItems(settings, normalizedKeyword),
+    searchDemandWorkItems(settings, normalizedKeyword)
+  ]);
+  return dedupeWorkItems([...taskRecords, ...demandRecords]);
+}
+
+async function searchTaskWorkItems(settings, keyword) {
   const response = await apiPost(settings.baseUrl, '/ms/vteam/api/user/plugin_man_hour/hour_regist', {
     projectId: [],
     begin: '',
     end: '',
     stateId: [],
-    title: keyword.trim(),
+    title: keyword,
     num: 1,
     size: 20
   });
-  return response?.data?.records ?? [];
+  return (response?.data?.records ?? []).map(normalizeTaskWorkItem).filter((item) => item.issueId);
+}
+
+async function searchDemandWorkItems(settings, keyword) {
+  const response = await apiPost(
+    settings.baseUrl,
+    `/ms/vteam/api/user/issue/${DEMAND_PROJECT_KEY}/table/DEMAND?num=1&size=20&remember=true`,
+    [
+      { name: 'search', value: [keyword] },
+      { name: 'exclude', value: [] },
+      { name: 'classify_tree_strategy', value: ['true'] }
+    ]
+  );
+  return getDemandRecords(response).map(normalizeDemandWorkItem).filter((item) => item.issueId);
+}
+
+function getDemandRecords(response) {
+  const records = response?.data?.records;
+  if (Array.isArray(records)) {
+    return records;
+  }
+  return Array.isArray(records?.content) ? records.content : [];
+}
+
+function normalizeTaskWorkItem(record) {
+  return {
+    ...record,
+    issueType: record.issueType || mapIssueType(record.typeClassify)
+  };
+}
+
+function normalizeDemandWorkItem(record) {
+  const issueId = getRecordValue(record, ['issueId', 'id', 'guid', 'uuid', 'demandId', 'workItemId']);
+  const estimateManHour = toNumberOrDefault(
+    getRecordValue(record, ['estimateManHour', 'estimate', 'planManHour', 'plannedManHour']),
+    0
+  );
+  return {
+    ...record,
+    issueId,
+    projectId: getRecordValue(record, ['projectId', 'projectKey']) || DEMAND_PROJECT_KEY,
+    number: getRecordValue(record, ['number', 'code']) || issueId,
+    title: getRecordValue(record, ['title', 'name']) || '未命名需求',
+    state: getRecordValue(record, ['state', 'status']) || '',
+    typeClassify: 'DEMAND',
+    issueType: '用户需求',
+    estimateManHour,
+    surplusManHour: toNumberOrDefault(getRecordValue(record, ['surplusManHour', 'remainManHour', 'remainingManHour']), estimateManHour),
+    createUser: getRecordValue(record, ['createUser', 'creator', 'owner']) || ''
+  };
+}
+
+function getRecordValue(record, names) {
+  for (const name of names) {
+    const direct = record?.[name];
+    if (direct !== undefined && direct !== null && direct !== '') {
+      return normalizeRecordFieldValue(direct);
+    }
+
+    const property = record?.property?.[name];
+    if (property !== undefined && property !== null) {
+      return normalizeRecordFieldValue(property);
+    }
+  }
+  return '';
+}
+
+function normalizeRecordFieldValue(field) {
+  if (typeof field !== 'object' || field === null) {
+    return field;
+  }
+  return field.displayValue ?? field.value ?? field.name ?? '';
+}
+
+function dedupeWorkItems(workItems) {
+  const seen = new Set();
+  return workItems.filter((item) => {
+    const key = `${item.typeClassify || item.issueType || ''}:${item.issueId}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
 
 async function submitBatch(payload) {
@@ -118,7 +211,8 @@ async function submitBatch(payload) {
       number: workItem.number,
       title: workItem.title,
       state: workItem.state,
-      typeClassify: workItem.typeClassify
+      typeClassify: workItem.typeClassify,
+      issueType: resolveIssueType(workItem, settings)
     },
     summary: {
       totalDates: details.length,
@@ -135,9 +229,11 @@ async function submitBatch(payload) {
 }
 
 function buildSubmitPayload(workItem, entry, settings) {
+  const manHour = Number(settings.manHour);
+  const estimateManHour = toNumberOrDefault(workItem.estimateManHour, 0);
   return {
     jobContent: truncateJobContent(entry.content),
-    manHour: Number(settings.manHour),
+    manHour,
     jobDate: entry.date,
     firstHourTypeId: Number(settings.firstHourTypeId),
     secondHourTypeId: Number(settings.secondHourTypeId),
@@ -147,14 +243,27 @@ function buildSubmitPayload(workItem, entry, settings) {
     productLineId: settings.productLineId,
     projectId: resolveSubmitProjectId(workItem),
     issueId: workItem.issueId,
-    issueType: settings.issueType || mapIssueType(workItem.typeClassify),
-    estimateManHour: 0,
-    surplusManHour: Number(settings.manHour) * -1,
+    issueType: resolveIssueType(workItem, settings),
+    estimateManHour,
+    surplusManHour: calculateSurplusManHour(estimateManHour, manHour),
     reviewer: settings.reviewer,
     firstReviewer: settings.firstReviewer,
     status: settings.status || 'PENDING',
     tenantId: settings.tenantId
   };
+}
+
+function resolveIssueType(workItem, settings) {
+  return workItem.issueType || settings.issueType || mapIssueType(workItem.typeClassify);
+}
+
+function calculateSurplusManHour(estimateManHour, manHour) {
+  return Number((estimateManHour - manHour).toFixed(2));
+}
+
+function toNumberOrDefault(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 function resolveSubmitProjectId(workItem) {
@@ -181,7 +290,8 @@ function mapIssueType(typeClassify) {
   const mapping = {
     TASK: '任务',
     BUG: '缺陷',
-    STORY: '需求'
+    STORY: '用户需求',
+    DEMAND: '用户需求'
   };
   return mapping[typeClassify] ?? '任务';
 }

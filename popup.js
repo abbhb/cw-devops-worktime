@@ -184,7 +184,7 @@ function renderWorkItems() {
     });
 
     title.textContent = `${item.number} ${item.title}`;
-    meta.textContent = `${item.state} ｜ ${item.projectId} ｜ ${item.typeClassify} ｜ 创建人 ${item.createUser}`;
+    meta.textContent = `${item.state} ｜ ${item.projectId} ｜ ${item.issueType || item.typeClassify} ｜ 创建人 ${item.createUser}`;
     fragment.appendChild(template);
   });
 
